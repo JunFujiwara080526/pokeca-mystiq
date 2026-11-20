@@ -1,0 +1,18 @@
+# Render Blueprint for Mystiq
+# https://render.com/docs/blueprint-spec
+services:
+  - type: web
+    name: mystiq
+    env: python
+    plan: free
+    region: singapore
+    buildCommand: "echo 'No build step required (Python stdlib only)'"
+    startCommand: "python3 server.py"
+    healthCheckPath: /api/healthz
+    envVars:
+      - key: PORT
+        sync: false
+      - key: HOST
+        value: "0.0.0.0"
+      - key: ADMIN_PASSWORD
+        generateValue: true

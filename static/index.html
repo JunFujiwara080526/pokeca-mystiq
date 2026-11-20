@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>謎解き 回答システム</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <header class="masthead">
+    <h1 id="title">月例 謎解きミッション</h1>
+    <div class="sub">別途配布された謎の答えを入力してください</div>
+  </header>
+
+  <!-- 参加登録（名前入力） -->
+  <section id="secRegister" class="card">
+    <h2>参加登録</h2>
+    <p class="muted small" style="margin-bottom:12px;">ニックネーム（またはチーム名）を入力してスタート！</p>
+    <div class="flex">
+      <input type="text" id="playerName" class="input flex-1" placeholder="例：ナゾトキ太郎" maxlength="30" autofocus>
+      <button id="btnStart" class="btn btn-gold">参戦する</button>
+    </div>
+  </section>
+
+  <!-- プレイヤーバー（登録後） -->
+  <section id="secPlayer" class="card" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <div>
+        <span class="small muted">挑戦者</span>
+        <div id="dispName" style="font-weight:800; font-size:1.15rem;"></div>
+      </div>
+      <div>
+        <span class="small muted">進行度</span>
+        <div id="dispProgress" style="font-weight:800; text-align:right;"></div>
+      </div>
+    </div>
+    <div class="progress-bar-wrap"><div id="pBar" class="progress-bar"></div></div>
+    <div id="stageTabs" style="display:flex; gap:6px; flex-wrap:wrap; margin-top:8px;"></div>
+  </section>
+
+  <!-- 受付停止中バナー -->
+  <div id="bannerClosed" class="card" style="display:none; text-align:center; border-color:var(--wrong);">
+    <strong style="color:var(--wrong)">⚠️ 現在は解答の受付を停止しています</strong>
+    <p class="muted small" style="margin-top:6px;">主催者の開始合図をお待ちください。</p>
+  </div>
+
+  <section id="announcement" class="card" style="display:none;" aria-live="polite">
+    <h3>運営からのお知らせ</h3>
+    <p id="announcementText"></p>
+  </section>
+
+  <!-- 解答とヒント -->
+  <section id="secStage" class="card" style="display:none;">
+    <div style="display:flex; justify-content:space-between; align-items:center;">
+      <span class="badge" id="stBadge">ステージ1</span>
+    </div>
+
+    <!-- ヒント枠（随時追加） -->
+    <div style="margin-top:16px;">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3>💡 ヒント</h3>
+        <span class="small muted" id="hintCount"></span>
+      </div>
+      <div id="hintList"></div>
+    </div>
+
+    <!-- 回答入力 -->
+    <form id="ansForm" style="margin-top:18px;">
+      <div class="small muted" id="ansNote" style="margin-bottom:6px;"></div>
+      <div class="flex">
+        <input type="text" id="ansInput" class="input flex-1" placeholder="回答を入力" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false">
+        <button id="ansBtn" class="btn btn-primary" type="submit">送信</button>
+      </div>
+    </form>
+
+    <!-- クールダウン表示（総当たり防止） -->
+    <div id="cooldownBox" style="display:none; margin-top:14px; text-align:center;">
+      <div class="muted small">不正解が連続したため、入力制限中です</div>
+      <div id="cdSec" class="cd-timer">30</div>
+    </div>
+
+    <!-- 正誤結果バナー -->
+    <div id="resultBanner" class="result-banner"></div>
+  </section>
+
+  <!-- 全クリア画面 -->
+  <section id="secClear" class="card" style="display:none;">
+    <div class="clear-hero">
+      <div class="trophy">🏆</div>
+      <h2 style="font-size:1.7rem; margin-top:10px; color:var(--gold);">MISSION CLEAR!</h2>
+      <p id="clearMsg" class="story" style="margin-top:8px;"></p>
+      <div class="stat-grid">
+        <div class="stat-box"><div class="val" id="resRank">-</div><div class="lab">順位</div></div>
+        <div class="stat-box"><div class="val" id="resTime">-</div><div class="lab">タイム</div></div>
+      </div>
+      <img id="resultPreview" class="result-preview" alt="結果カードのプレビュー。参加者名、順位、タイムが表示されています。" style="display:none;">
+      <button id="btnShareImg" class="btn btn-gold btn-block" style="margin-top:8px;" disabled>結果カードを保存</button>
+      <button id="btnNativeShare" class="btn btn-secondary btn-block" style="display:none; margin-top:8px;">結果カードを共有</button>
+      <p id="cardHelp" class="small muted" style="margin-top:10px;">画像を保存してXなどに添付できます。スマホでは画像を長押しして保存することもできます。</p>
+      <p class="small muted" style="margin-top:10px;">順位は下の「ランキング」タブから確認できます。</p>
+    </div>
+  </section>
+</div>
+
+<nav class="nav-bar">
+  <a class="nav-btn active" href="index.html" aria-current="page"><span>❓</span>回答</a>
+  <a class="nav-btn" href="ranking.html"><span>🏆</span>ランキング</a>
+</nav>
+
+<div id="toast" class="toast"></div>
+
+<script src="app.js"></script>
+</body>
+</html>

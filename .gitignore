@@ -1,0 +1,9 @@
+data/mystiq.db*
+data/admin_password.txt
+data/admin_password_hash.json
+data/uploads/
+server.log
+mystiq.pid
+__pycache__/
+*.py[cod]
+.work_test.log

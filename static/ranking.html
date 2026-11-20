@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>ランキング - 謎解き</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    .big-rank { font-size: 1.6rem; }
+    .leader { background: linear-gradient(135deg, rgba(241,196,15,0.12), transparent); border-color: rgba(241,196,15,0.4); }
+  </style>
+</head>
+<body>
+<div class="app">
+  <header class="masthead">
+    <h1>🏆 正解者ランキング</h1>
+    <div class="sub">クリア数とクリアした時刻で自動集計（5秒ごとに更新）</div>
+  </header>
+  <div class="card" id="myCard" style="display:none;">
+    <div class="small muted">あなたの現在地</div>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-top:4px;">
+      <div id="myName" style="font-size:1.3rem; font-weight:900;"></div>
+      <div id="myRank" style="font-size:1.5rem; font-weight:900; color:var(--gold);"></div>
+    </div>
+  </div>
+  <div class="card" style="padding:10px 16px;">
+    <div id="list"></div>
+  </div>
+  <div class="small muted" style="text-align:center;">同問クリアの場合は「その問を先にクリアした順」で上位になります</div>
+</div>
+<nav class="nav-bar">
+  <a class="nav-btn" href="index.html"><span>❓</span>回答</a>
+  <a class="nav-btn active" href="ranking.html" aria-current="page"><span>🏆</span>ランキング</a>
+</nav>
+<script>
+const my = JSON.parse(localStorage.getItem("mystiq_player") || "null");
+async function load() {
+  const r = await fetch("/api/ranking");
+  const d = await r.json();
+  const list = document.getElementById("list");
+  if (!d.ranking.length) { list.innerHTML = '<div class="muted" style="padding:20px;text-align:center;">まだ解答者はいません</div>'; return; }
+  list.innerHTML = "";
+  d.ranking.forEach(row => {
+    const isMe = my && my.id === row.id;
+    const rc = row.rank === 1 ? " r1" : row.rank === 2 ? " r2" : row.rank === 3 ? " r3" : "";
+    const div = document.createElement("div");
+    div.className = "rank-row" + (row.rank === 1 ? " leader" : "");
+    if (isMe) div.style.background = "#21262d";
+    div.innerHTML = `
+      <div style="display:flex; align-items:center; gap:12px;">
+        <div class="rank-num big-rank${rc}">${row.rank}</div>
+        <div>
+          <div class="rank-name big-rank" style="font-size:1.1rem;">${esc(row.name)} ${row.finished ? "👑" : ""}</div>
+          <div class="small muted">${row.cleared_count} / ${d.total_stages} クリア</div>
+        </div>
+      </div>
+      <div class="rank-stat big-rank">${row.cleared_count > 0 ? fmt(row.elapsed) : "-"}</div>
+    `;
+    list.appendChild(div);
+  });
+  if (my) {
+    const me = d.ranking.find(x => x.id === my.id);
+    if (me) {
+      document.getElementById("myCard").style.display = "block";
+      document.getElementById("myName").textContent = me.name;
+      document.getElementById("myRank").textContent = `第 ${me.rank} 位（${me.cleared_count}/${d.total_stages} クリア）`;
+    }
+  }
+}
+function fmt(s){ const m=Math.floor(s/60); return `${m}分${String(s%60).padStart(2,"0")}秒`; }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+load(); setInterval(load, 5000);
+</script>
+</body>
+</html>

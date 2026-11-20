@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>実況ボード - 謎解きミッション</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+  <style>
+    body { padding: 24px; max-width: 1200px; margin: 0 auto 60px; font-size: 18px; }
+    .screen-header { display: flex; justify-content: space-between; align-items: center; padding: 10px 0 20px; }
+    .screen-title { font-size: 2.2rem; font-weight: 900; }
+    .status-pill { padding: 6px 14px; border-radius: 999px; font-size: 0.95rem; font-weight: 800; }
+    .status-open { background: var(--correct); color: #04210a; }
+    .status-pause { background: var(--wrong); color: #2e0809; }
+    .grid { display: grid; grid-template-columns: 2fr 1fr; gap: 20px; }
+    @media (max-width: 900px){ .grid { grid-template-columns: 1fr; } }
+    .board-row { display: grid; grid-template-columns: 70px 1fr 140px; align-items: center;
+      padding: 14px 18px; border-bottom: 1px solid #21262d; font-size: 1.15rem;  }
+    .board-row.top1 { background: linear-gradient(135deg, rgba(241,196,15,0.18), transparent); font-size: 1.35rem; font-weight: 900; }
+    .board-row.top2 { font-size: 1.25rem; }
+    .board-row.top3 { font-size: 1.2rem; }
+    .big-num { font-size: 2rem; font-weight: 900; }
+    .ticker { background: #0b0f14; border: 1px solid var(--border); border-radius: 12px; padding: 12px; height: 520px; overflow: hidden; display: flex; flex-direction: column-reverse; gap: 6px; }
+    .tick { padding: 10px 12px; border-radius: 8px; font-size: 0.95rem; border-left: 4px solid var(--accent); background: #161b22;  }
+    .tick.clear { border-color: var(--correct); }
+    .tick.all_clear { border-color: var(--gold); background: rgba(241,196,15,0.1); font-weight: 900; }
+    .tick.hint { border-color: var(--gold); }
+    .clock { font-variant-numeric: tabular-nums; font-weight: 900; font-size: 1.8rem; color: var(--gold); }
+    .hint-chip { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.82rem; margin: 2px; }
+    .hint-chip.on { background: rgba(241,196,15,0.25); color: #f9e154; border: 1px solid rgba(241,196,15,0.5); }
+    .hint-chip.off { background: #21262d; color: var(--text-dim); }
+  </style>
+</head>
+<body>
+  <div class="screen-header">
+    <div>
+      <div class="screen-title" id="title">月例 謎解きミッション</div>
+      <div class="muted" id="subtitle">LIVE LEADERBOARD</div>
+    </div>
+    <div style="text-align:right;">
+      <div class="clock" id="clock">00:00:00</div>
+      <div style="margin-top:6px;"><span id="statusPill" class="status-pill status-open">解答受付中</span></div>
+    </div>
+  </div>
+
+  <div class="card" style="padding:12px 18px; margin-bottom:16px;">
+    <span class="small muted">💡 現在公開中のヒント：</span>
+    <span id="hintChips"></span>
+  </div>
+
+  <div class="grid">
+    <div class="card" style="padding:4px 0;">
+      <div style="padding:14px 18px 6px; display:flex; justify-content:space-between; align-items:baseline;">
+        <h2 style="margin:0;">🏆 順位表（リアルタイム速報）</h2>
+        <span class="small muted" id="cnt">0名参戦</span>
+      </div>
+      <div id="board"></div>
+    </div>
+    <div>
+      <div class="card" style="padding:14px;">
+        <h2 style="margin-bottom:8px;">⚡ 実況速報</h2>
+        <div class="ticker" id="ticker"></div>
+      </div>
+    </div>
+  </div>
+
+<canvas id="confettiCanvas"></canvas>
+<script src="app.js"></script>
+<script>
+// screen画面専用：app.jsの演出（confettiBurst）を再利用、独自ポーリング
+let lastEv = 0;
+setInterval(() => {
+  const d = new Date();
+  document.getElementById("clock").textContent = d.toLocaleTimeString("ja-JP");
+}, 250);
+
+async function tick() {
+  try {
+    const [rr, er, pr] = await Promise.all([fetch("/api/ranking"), fetch("/api/events?since=" + lastEv), fetch("/api/puzzle")]);
+    const d = await rr.json();
+    const ed = await er.json();
+    const pd = await pr.json();
+    document.getElementById("title").textContent = pd.title;
+    const pill = document.getElementById("statusPill");
+    pill.textContent = d.competition_started ? "解答受付中" : "一時停止中";
+    pill.className = "status-pill " + (d.competition_started ? "status-open" : "status-pause");
+    document.getElementById("cnt").textContent = `${d.ranking.length}名参戦`;
+
+    const board = document.getElementById("board");
+    if (!d.ranking.length) { board.innerHTML = '<div class="muted" style="padding:30px;text-align:center;">参加者の回答を待っています…</div>'; }
+    else {
+      board.innerHTML = d.ranking.slice(0, 15).map(r => {
+        const top = r.rank === 1 ? " top1" : r.rank === 2 ? " top2" : r.rank === 3 ? " top3" : "";
+        const rc = r.rank === 1 ? " r1" : r.rank === 2 ? " r2" : r.rank === 3 ? " r3" : "";
+        return `<div class="board-row${top}">
+          <div class="big-num${rc}" style="text-align:center;">${r.rank}</div>
+          <div>
+            <div>${esc(r.name)} ${r.finished ? "👑" : ""}</div>
+            <div class="small muted">${r.cleared_count} / ${d.total_stages} クリア</div>
+          </div>
+          <div style="text-align:right; font-weight:900;">${r.cleared_count > 0 ? fmt(r.elapsed) : "-"}</div>
+        </div>`;
+      }).join("");
+    }
+
+    // ヒント状態
+    const chips = [];
+    pd.stages.forEach(st => {
+      st.hints.forEach((h, i) => {
+        chips.push(`<span class="hint-chip ${h ? 'on' : 'off'}">${esc(st.name)} ヒント${i+1}</span>`);
+      });
+    });
+    document.getElementById("hintChips").innerHTML = chips.join("");
+
+    // イベント
+    if (ed.events.length) {
+      lastEv = ed.server_time;
+      const t = document.getElementById("ticker");
+      ed.events.forEach(ev => {
+        if (ev.type === "wrong") return; // 不正解は速報に表示しない
+        const it = document.createElement("div");
+        it.className = "tick " + ev.type;
+        const time = new Date(ev.created_at * 1000).toLocaleTimeString("ja-JP");
+        it.innerHTML = `<span class="muted">[${time}]</span> ${esc(ev.message)}`;
+        t.appendChild(it);
+        // all_clear
+      });
+      while (t.children.length > 25) t.removeChild(t.firstChild);
+    }
+  } catch(e) {}
+}
+function fmt(s){ const m=Math.floor(s/60); return `${m}分${String(s%60).padStart(2,"0")}秒`; }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+tick(); setInterval(tick, 2500);
+</script>
+</body>
+</html>

@@ -1,0 +1,6 @@
+{
+  "competition_started": true,
+  "title": "月例 謎解きミッション",
+  "rate_limit_wrongs": 3,
+  "cooldown_seconds": 30
+}

@@ -1,0 +1,64 @@
+{
+  "title": "月例 謎解きミッション #1",
+  "subtitle": "暗号を解読し、すべてのステージをクリアせよ！",
+  "stages": [
+    {
+      "id": 1,
+      "name": "ステージ1",
+      "subtitle": "入口の暗号",
+      "story": "部屋の中央には古い石碑があり、不思議な文様が刻まれている。文様をよく見ると、数字が描かれているようだ...",
+      "question": "「1 1 2 3 5 8」の次に続く数字は？",
+      "questionHtml": "<p>次の数列の「？」に入る数を半角数字で答えよ。</p><div class=\"puzzle-box\">1 , 1 , 2 , 3 , 5 , 8 , <strong>？</strong></div>",
+      "answers": ["13"],
+      "answerNote": "半角数字で回答",
+      "hints": [
+        "前の2つの数を足すと、次の数になります。",
+        "これは「フィボナッチ数列」と呼ばれる有名な数列です。8 + 5 は？"
+      ],
+      "nearAnswers": [
+        {"input": "21", "message": "その次は21ですが、今回は「？」の直後の数字です！惜しい！"},
+        {"input": "11", "message": "足し算のルールを見直してみよう！"},
+        {"input": "じゅうさん", "message": "正解です！半角数字「13」で入力してください。"}
+      ],
+      "image": ""
+    },
+    {
+      "id": 2,
+      "name": "ステージ2",
+      "subtitle": "色の扉",
+      "story": "石碑が開き、奥へ続く扉が現れた。扉には4つの色が塗られており、奇妙な歌が刻まれている...",
+      "question": "赤＋青＝紫、青＋黄＝緑。では、赤＋黄＝？（カタカナで答えよ）",
+      "questionHtml": "<p>色の混色の法則に従って、「？」に入る色の名前を<strong>カタカナ</strong>で答えよ。</p><div class=\"puzzle-box\"><span style=\"color:#e74c3c\">赤</span> ＋ <span style=\"color:#3498db\">青</span> ＝ 紫<br><span style=\"color:#3498db\">青</span> ＋ <span style=\"color:#f1c40f\">黄</span> ＝ 緑<br><span style=\"color:#e74c3c\">赤</span> ＋ <span style=\"color:#f1c40f\">黄</span> ＝ <strong>？</strong></div>",
+      "answers": ["オレンジ", "だいだい", "橙色", "オレンジ色", "橙"],
+      "answerNote": "カタカナで回答",
+      "hints": [
+        "夕焼け空のような色、またはある果物の名前です。",
+        "オから始まる4文字。英単語でも同じ名前の果物があります。"
+      ],
+      "nearAnswers": [
+        {"input": "orange", "message": "その通り！カタカナで「オレンジ」と答えてください。"}
+      ],
+      "image": ""
+    },
+    {
+      "id": 3,
+      "name": "ステージ3",
+      "subtitle": "最後の合言葉",
+      "story": "扉の向こうには宝箱が置かれていた。鍵穴の横には最後のメッセージが光っている...",
+      "question": "逆さ言葉の謎：「とまと」「しんぶんし」「たけやぶやけた」の共通点は何？（漢字2文字）",
+      "questionHtml": "<p>次の言葉たちに共通する<strong>ある特徴</strong>を<strong>漢字2文字</strong>で答えよ。</p><div class=\"puzzle-box\">・とまと<br>・しんぶんし<br>・たけやぶやけた</div>",
+      "answers": ["回文", "かいぶん", "かい文", "上から読んでも下から読んでも同じ", "回文言葉"],
+      "answerNote": "漢字2文字で回答",
+      "hints": [
+        "上から読んでも、下から読んでも...",
+        "「回る文」と書きます。漢字2文字です。"
+      ],
+      "nearAnswers": [
+        {"input": "palindrome", "message": "英語ではその通り！漢字2文字で答えてください。"},
+        {"input": "逆さ言葉", "message": "その性質を指す「漢字2文字」の言葉があります！惜しい！"}
+      ],
+      "image": ""
+    }
+  ],
+  "clearMessage": "すべての謎を解き明かした！見事、ミッションクリア！"
+}

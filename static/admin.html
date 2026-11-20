@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>管理画面 - 謎解きミッション</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<!-- ログインモーダル -->
+<div id="loginModal" class="modal-backdrop">
+  <div class="card modal-card">
+    <h2 style="margin-top:0;">🔐 管理者ログイン</h2>
+    <p class="small muted" style="margin-bottom:14px;">設定した管理者パスワードを入力してください。<br>初回起動時のパスワードはサーバー起動ログまたは <code>data/admin_password.txt</code> に記載されています。</p>
+    <form id="loginForm" onsubmit="return false;">
+      <input type="password" id="loginPw" class="input" placeholder="パスワード" autocomplete="current-password" autofocus>
+      <div class="flex" style="margin-top:12px;">
+        <button id="btnLogin" class="btn btn-primary btn-block" type="submit">ログイン</button>
+      </div>
+      <div id="loginError" class="small" style="color:var(--wrong); margin-top:8px;"></div>
+    </form>
+  </div>
+</div>
+
+<!-- パスワード変更モーダル -->
+<div id="pwModal" class="modal-backdrop" style="display:none;">
+  <div class="card modal-card">
+    <h2 style="margin-top:0;">🔑 管理者パスワード変更</h2>
+    <form id="pwForm" onsubmit="return false;">
+      <input type="password" id="newPw" class="input" placeholder="新しいパスワード（8文字以上）" autocomplete="new-password">
+      <input type="password" id="newPw2" class="input" placeholder="確認のためもう一度入力" autocomplete="new-password" style="margin-top:8px;">
+      <div class="flex" style="margin-top:12px;">
+        <button id="btnPwSave" class="btn btn-gold btn-block" type="submit">変更する</button>
+        <button id="btnPwCancel" class="btn btn-secondary btn-block" type="button">キャンセル</button>
+      </div>
+      <div id="pwError" class="small" style="color:var(--wrong); margin-top:8px;"></div>
+    </form>
+  </div>
+</div>
+
+<div class="app">
+  <header class="masthead">
+    <h1>⚙️ 運営ダッシュボード</h1>
+    <div class="sub">進行コントロール・ヒント管理・問題編集</div>
+    <div class="flex" style="justify-content:center; flex-wrap:wrap; margin-top:10px;">
+      <button id="btnBackup" class="btn btn-secondary" style="font-size:0.8rem; padding:6px 12px;">💾 データバックアップ</button>
+      <button id="btnChangePw" class="btn btn-secondary" style="font-size:0.8rem; padding:6px 12px;">🔑 パスワード変更</button>
+      <button id="btnLogout" class="btn btn-secondary" style="font-size:0.8rem; padding:6px 12px;">🚪 ログアウト</button>
+    </div>
+  </header>
+
+  <!-- 進行コントロール -->
+  <section class="card">
+    <h2>🎮 進行コントロール</h2>
+    <div class="switch-row">
+      <div>
+        <strong>解答受付</strong>
+        <div class="small muted">開始・一時停止・終了を切り替えます</div>
+      </div>
+      <button id="btnToggleComp" class="btn btn-correct">受付中（クリックで停止）</button>
+    </div>
+    <div style="margin-top:14px;">
+      <div class="small muted" style="margin-bottom:4px;">📣 参加者全体へお知らせを送信（解答画面に表示）</div>
+      <div class="flex">
+        <input type="text" id="bcMsg" class="input flex-1" placeholder="例：残り15分です！">
+        <button id="btnBc" class="btn btn-primary">送信</button>
+      </div>
+    </div>
+  </section>
+
+  <!-- 💡 随時ヒント追加機能（最重要） -->
+  <section class="card">
+    <h2>💡 ヒント管理（随時公開）</h2>
+    <p class="small muted">「公開」を押すと参加者の画面に自動反映されます（最大約8秒）。取り下げも可能です。</p>
+    <div id="hintControls"></div>
+  </section>
+
+  <!-- 進行モニター（参加者一覧と現在地） -->
+  <section class="card">
+    <h2>📊 進行モニター（リアルタイム）</h2>
+    <div class="stat-grid">
+      <div class="stat-box"><div class="val" id="stPlayers">0</div><div class="lab">参戦人数</div></div>
+      <div class="stat-box"><div class="val" id="stAttempts">0</div><div class="lab">総解答数</div></div>
+      <div class="stat-box"><div class="val" id="stClears">0</div><div class="lab">ステージ突破数</div></div>
+    </div>
+    <div style="overflow-x:auto;">
+      <table class="data">
+        <thead><tr><th>名前</th><th>進行状況</th><th>総所要時間</th><th>登録日時</th></tr></thead>
+        <tbody id="playerTable"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- 問題編集（月1回の準備がここで完結） -->
+  <section class="card">
+    <h2>📝 解答・ヒント設定（JSON）</h2>
+    <p class="small muted">正解・ヒント・「惜しい！」判定メッセージを設定します。謎の問題文・画像は不要です。形式不正時はエラー表示されます。</p>
+    <textarea id="jsonEditor" class="input json-editor"></textarea>
+    <div class="flex" style="margin-top:8px;">
+      <button id="btnSavePuzzle" class="btn btn-gold">解答・ヒント設定を保存</button>
+      <button id="btnReloadPuzzle" class="btn btn-secondary">元に戻す</button>
+    </div>
+  </section>
+
+  <!-- 危険操作 -->
+  <section class="card" style="border-color: rgba(248,81,73,0.5);">
+    <h2 style="color:var(--wrong);">⚠️ データリセット</h2>
+    <p class="small muted">大会終了後のリセット、またはテストデータの削除用です。</p>
+    <div class="flex" style="flex-wrap:wrap; margin-top:8px;">
+      <button class="btn btn-secondary" onclick="doReset('hints')">ヒント公開状態のみリセット</button>
+      <button class="btn btn-secondary" onclick="doReset('ranking')">解答履歴・ランキングをリセット</button>
+      <button class="btn btn-wrong" onclick="doReset('all')">全データ初期化</button>
+    </div>
+  </section>
+</div>
+
+<div id="toast" class="toast"></div>
+<nav class="nav-bar">
+  <a class="nav-btn" href="index.html"><span>❓</span>回答</a>
+  <a class="nav-btn" href="ranking.html"><span>🏆</span>ランキング</a>
+  <a class="nav-btn active" href="admin.html" aria-current="page"><span>⚙️</span>管理</a>
+</nav>
+
+<script>
+const el = id => document.getElementById(id);
+let adminData = null;
+const TOKEN_KEY = "mystiq_admin_token";
+let pollTimer = null;
+
+function token() { return localStorage.getItem(TOKEN_KEY) || ""; }
+function setToken(t) { if (t) localStorage.setItem(TOKEN_KEY, t); else localStorage.removeItem(TOKEN_KEY); }
+
+function showLogin() {
+  el("loginModal").style.display = "flex";
+  el("loginPw").value = "";
+  el("loginError").textContent = "";
+  clearInterval(pollTimer);
+  setTimeout(() => el("loginPw").focus(), 50);
+}
+function hideLogin() { el("loginModal").style.display = "none"; }
+
+async function adminFetch(url, opts = {}) {
+  opts.headers = Object.assign({}, opts.headers || {});
+  const t = token();
+  if (t) opts.headers["X-Admin-Token"] = t;
+  const r = await fetch(url, opts);
+  if (r.status === 401) { showLogin(); throw new Error("unauthorized"); }
+  return r;
+}
+
+async function load() {
+  const r = await adminFetch("/api/admin/data");
+  adminData = await r.json();
+  const c = adminData.config;
+  const started = c.competition_started;
+  const btn = el("btnToggleComp");
+  btn.className = "btn " + (started ? "btn-correct" : "btn-wrong");
+  btn.textContent = started ? "解答 受付中（クリックで停止）" : "一時停止中（クリックで開始）";
+
+  // モニター
+  const rk = await (await fetch("/api/ranking")).json();
+  el("stPlayers").textContent = adminData.stats.players;
+  el("stAttempts").textContent = adminData.stats.attempts;
+  el("stClears").textContent = adminData.stats.clears;
+  el("playerTable").innerHTML = rk.ranking.map(r => `
+    <tr>
+      <td><strong>${esc(r.name)}</strong> ${r.finished ? "👑" : ""}</td>
+      <td>${r.cleared_count} / ${rk.total_stages}</td>
+      <td>${r.cleared_count > 0 ? fmt(r.elapsed) : "-"}</td>
+      <td class="small muted">${new Date(r.created_at*1000).toLocaleTimeString("ja-JP")}</td>
+    </tr>`).join("") || '<tr><td colspan="4" class="muted">まだ参加者はいません</td></tr>';
+
+  // ヒント管理
+  renderHintControls();
+  // JSONエディタ（初回のみ）
+  if (!el("jsonEditor")._loaded) {
+    el("jsonEditor").value = JSON.stringify(adminData.puzzle, null, 2);
+    el("jsonEditor")._loaded = true;
+  }
+}
+
+function renderHintControls() {
+  const unlocked = new Set(adminData.hints.map(h => `${h.stage_id}_${h.hint_index}`));
+  const box = el("hintControls");
+  box.innerHTML = "";
+  (adminData.puzzle.stages || []).forEach(st => {
+    const d = document.createElement("div");
+    d.style.margin = "12px 0";
+    d.innerHTML = `<strong>${esc(st.name)}</strong> <span class="small muted">${esc(st.subtitle||"")}</span>`;
+    const ul = document.createElement("div");
+    (st.hints || []).forEach((h, i) => {
+      const key = `${st.id}_${i}`;
+      const on = unlocked.has(key);
+      const row = document.createElement("div");
+      row.className = "switch-row";
+      row.style.background = "#0b0f14"; row.style.padding = "8px 12px";
+      row.style.borderRadius = "8px"; row.style.margin = "4px 0";
+      row.innerHTML = `<div class="small flex-1" style="margin-right:10px;">ヒント${i+1}： ${esc(h)}</div>
+        <button class="btn btn-sm ${on?'btn-gold':'btn-secondary'}" onclick="toggleHint(${st.id}, ${i})">${on?'★ 公開中（非公開にする）':'公開する'}</button>`;
+      ul.appendChild(row);
+    });
+    d.appendChild(ul);
+    box.appendChild(d);
+  });
+}
+
+el("btnToggleComp").onclick = async () => {
+  const r = await adminFetch("/api/admin/competition/toggle", { method: "POST" });
+  await load(); toast("受付状態を切り替えました");
+};
+el("btnBc").onclick = async () => {
+  const msg = el("bcMsg").value.trim(); if (!msg) return;
+  await adminFetch("/api/admin/broadcast", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({message:msg})});
+  el("bcMsg").value = ""; toast("アナウンスを送信しました");
+};
+async function toggleHint(stage_id, hint_index) {
+  const r = await adminFetch("/api/admin/hint/toggle", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({stage_id, hint_index}) });
+  const d = await r.json(); toast(d.message);
+  await load();
+}
+el("btnSavePuzzle").onclick = async () => {
+  try {
+    const pz = JSON.parse(el("jsonEditor").value);
+    const r = await adminFetch("/api/admin/puzzle/save", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({puzzle:pz}) });
+    const d = await r.json();
+    if (d.ok) toast("問題データを保存しました"); else toast(d.error);
+    await load();
+  } catch(e) { toast("JSONの形式が不正です: " + e.message); }
+};
+el("btnReloadPuzzle").onclick = () => { el("jsonEditor").value = JSON.stringify(adminData.puzzle, null, 2); };
+
+async function doReset(what) {
+  const names = {all:"すべての解答・ランキング・ヒント・プレイヤーデータ", hints:"ヒント公開状態", ranking:"解答履歴とランキング"};
+  if (!confirm(`本当に「${names[what]}」をリセットしますか？この操作は取り消せません。`)) return;
+  const r = await adminFetch("/api/admin/reset", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({what}) });
+  const d = await r.json(); toast(d.message); await load();
+}
+function toast(m){ const t=el("toast"); t.textContent=m; t.style.display="block"; clearTimeout(t._tm); t._tm=setTimeout(()=>t.style.display="none",2500); }
+function fmt(s){ const m=Math.floor(s/60); return `${m}分${String(s%60).padStart(2,"0")}秒`; }
+function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+
+async function login() {
+  el("loginError").textContent = "";
+  const pw = el("loginPw").value;
+  try {
+    const r = await fetch("/api/admin/login", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({password:pw}) });
+    const d = await r.json();
+    if (d.ok) {
+      setToken(d.token); hideLogin();
+      await load();
+      pollTimer = setInterval(load, 5000);
+    } else { el("loginError").textContent = d.error || "ログインに失敗しました"; }
+  } catch (e) { el("loginError").textContent = "通信エラーが発生しました"; }
+}
+el("btnLogin").onclick = login;
+el("loginPw").addEventListener("keydown", e => { if (e.key === "Enter") login(); });
+
+el("btnLogout").onclick = async () => {
+  try { await fetch("/api/admin/logout", { method:"POST", headers:{"X-Admin-Token":token()} }); } catch(e) {}
+  setToken(""); showLogin();
+};
+
+el("btnBackup").onclick = async () => {
+  try {
+    const r = await adminFetch("/api/admin/backup");
+    const blob = await r.blob();
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = `mystiq-backup-${Date.now()}.json`;
+    a.click(); URL.revokeObjectURL(a.href);
+    toast("バックアップを保存しました");
+  } catch (e) { toast("バックアップの取得に失敗しました"); }
+};
+
+el("btnChangePw").onclick = async () => {
+  const r = await adminFetch("/api/admin/password/source");
+  const d = await r.json();
+  if (d.managed_by_env) {
+    alert("パスワードは環境変数 ADMIN_PASSWORD で管理されています。\n変更はRender等の管理画面（Environment）から行い、サービスを再デプロイしてください。");
+    return;
+  }
+  el("newPw").value = ""; el("newPw2").value = ""; el("pwError").textContent = "";
+  el("pwModal").style.display = "flex"; el("newPw").focus();
+};
+el("btnPwCancel").onclick = () => { el("pwModal").style.display = "none"; };
+el("btnPwSave").onclick = async () => {
+  const a = el("newPw").value, b = el("newPw2").value;
+  if (a.length < 8) { el("pwError").textContent = "パスワードは8文字以上にしてください"; return; }
+  if (a !== b) { el("pwError").textContent = "パスワードが一致しません"; return; }
+  try {
+    const r = await adminFetch("/api/admin/password/change", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({new_password:a}) });
+    const d = await r.json();
+    if (d.ok) { el("pwModal").style.display = "none"; toast(d.message); }
+    else { el("pwError").textContent = d.error; }
+  } catch (e) { el("pwError").textContent = "変更に失敗しました"; }
+};
+
+(async () => {
+  if (!token()) { showLogin(); return; }
+  try {
+    await adminFetch("/api/admin/session");
+    hideLogin();
+    await load();
+    pollTimer = setInterval(load, 5000);
+  } catch (e) { showLogin(); }
+})();
+</script>
+</body>
+</html>
