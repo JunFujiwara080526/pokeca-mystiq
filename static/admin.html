@@ -1,62 +1,52 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <title>管理画面 - 謎解きミッション</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>管理パネル — Mystiq</title>
+<link rel="stylesheet" href="style.css">
 </head>
-<body>
-<!-- ログインモーダル -->
-<div id="loginModal" class="modal-backdrop">
-  <div class="card modal-card">
-    <h2 style="margin-top:0;">🔐 管理者ログイン</h2>
-    <p class="small muted" style="margin-bottom:14px;">設定した管理者パスワードを入力してください。<br>初回起動時のパスワードはサーバー起動ログまたは <code>data/admin_password.txt</code> に記載されています。</p>
-    <form id="loginForm" onsubmit="return false;">
-      <input type="password" id="loginPw" class="input" placeholder="パスワード" autocomplete="current-password" autofocus>
-      <div class="flex" style="margin-top:12px;">
-        <button id="btnLogin" class="btn btn-primary btn-block" type="submit">ログイン</button>
-      </div>
-      <div id="loginError" class="small" style="color:var(--wrong); margin-top:8px;"></div>
-    </form>
+<body class="page">
+<div class="container admin-container">
+  <div class="admin-toolbar flex">
+    <h1 class="logo flex-1" style="margin:0;">🕹 Mystiq 管理パネル</h1>
+    <button id="btnBackup" class="btn btn-sm btn-secondary">💾 データバックアップ</button>
+    <button id="btnChangePw" class="btn btn-sm btn-secondary">🔑 パスワード変更</button>
+    <button id="btnLogout" class="btn btn-sm btn-secondary">🚪 ログアウト</button>
   </div>
-</div>
 
-<!-- パスワード変更モーダル -->
-<div id="pwModal" class="modal-backdrop" style="display:none;">
-  <div class="card modal-card">
-    <h2 style="margin-top:0;">🔑 管理者パスワード変更</h2>
-    <form id="pwForm" onsubmit="return false;">
-      <input type="password" id="newPw" class="input" placeholder="新しいパスワード（8文字以上）" autocomplete="new-password">
-      <input type="password" id="newPw2" class="input" placeholder="確認のためもう一度入力" autocomplete="new-password" style="margin-top:8px;">
-      <div class="flex" style="margin-top:12px;">
-        <button id="btnPwSave" class="btn btn-gold btn-block" type="submit">変更する</button>
-        <button id="btnPwCancel" class="btn btn-secondary btn-block" type="button">キャンセル</button>
+  <!-- ログインモーダル -->
+  <div id="loginModal" class="modal-backdrop" style="display:none;">
+    <div class="modal">
+      <h2>🔐 管理者ログイン</h2>
+      <p class="small muted">管理者パスワードを入力してください。</p>
+      <input type="password" id="loginPw" class="input" placeholder="パスワード" autocomplete="current-password">
+      <div id="loginError" class="small" style="color:var(--wrong);margin-top:6px;"></div>
+      <div class="flex" style="margin-top:10px;justify-content:flex-end;">
+        <button id="btnLogin" class="btn btn-gold">ログイン</button>
       </div>
-      <div id="pwError" class="small" style="color:var(--wrong); margin-top:8px;"></div>
-    </form>
-  </div>
-</div>
-
-<div class="app">
-  <header class="masthead">
-    <h1>⚙️ 運営ダッシュボード</h1>
-    <div class="sub">進行コントロール・ヒント管理・問題編集</div>
-    <div class="flex" style="justify-content:center; flex-wrap:wrap; margin-top:10px;">
-      <button id="btnBackup" class="btn btn-secondary" style="font-size:0.8rem; padding:6px 12px;">💾 データバックアップ</button>
-      <button id="btnChangePw" class="btn btn-secondary" style="font-size:0.8rem; padding:6px 12px;">🔑 パスワード変更</button>
-      <button id="btnLogout" class="btn btn-secondary" style="font-size:0.8rem; padding:6px 12px;">🚪 ログアウト</button>
     </div>
-  </header>
+  </div>
 
-  <!-- 進行コントロール -->
-  <section class="card">
-    <h2>🎮 進行コントロール</h2>
-    <div class="switch-row">
-      <div>
-        <strong>解答受付</strong>
-        <div class="small muted">開始・一時停止・終了を切り替えます</div>
+  <!-- パスワード変更モーダル -->
+  <div id="pwModal" class="modal-backdrop" style="display:none;">
+    <div class="modal">
+      <h2>🔑 パスワード変更</h2>
+      <p class="small muted">新しいパスワードを8文字以上で入力してください。</p>
+      <input type="password" id="newPw" class="input" placeholder="新しいパスワード（8文字以上）">
+      <input type="password" id="newPw2" class="input" placeholder="もう一度入力" style="margin-top:6px;">
+      <div id="pwError" class="small" style="color:var(--wrong);margin-top:6px;"></div>
+      <div class="flex" style="margin-top:10px;justify-content:flex-end;gap:6px;">
+        <button id="btnPwCancel" class="btn btn-secondary">キャンセル</button>
+        <button id="btnPwSave" class="btn btn-gold">保存</button>
       </div>
+    </div>
+  </div>
+
+  <!-- 進行制御 -->
+  <section class="card">
+    <h2>⏱ 進行制御</h2>
+    <div class="flex" style="flex-wrap:wrap; gap:8px;">
       <button id="btnToggleComp" class="btn btn-correct">受付中（クリックで停止）</button>
     </div>
     <div style="margin-top:14px;">
@@ -68,20 +58,20 @@
     </div>
   </section>
 
-  <!-- 💡 随時ヒント追加機能（最重要） -->
+  <!-- 💡 随時ヒント追加機能（大会中ワンクリック追記対応） -->
   <section class="card">
-    <h2>💡 ヒント管理（随時公開）</h2>
-    <p class="small muted">「公開」を押すと参加者の画面に自動反映されます（最大約8秒）。取り下げも可能です。</p>
+    <h2>💡 ヒント管理（随時公開 ＋ 大会中の追記）</h2>
+    <p class="small muted">「公開」を押すと参加者の画面に約8秒で反映されます。<strong>大会中にヒントを増やす場合は、各問の「新しいヒント」枠に入力して「追加して即公開」を押すだけです。</strong></p>
     <div id="hintControls"></div>
   </section>
 
-  <!-- 進行モニター（参加者一覧と現在地） -->
+  <!-- 進行モニター -->
   <section class="card">
     <h2>📊 進行モニター（リアルタイム）</h2>
     <div class="stat-grid">
       <div class="stat-box"><div class="val" id="stPlayers">0</div><div class="lab">参戦人数</div></div>
       <div class="stat-box"><div class="val" id="stAttempts">0</div><div class="lab">総解答数</div></div>
-      <div class="stat-box"><div class="val" id="stClears">0</div><div class="lab">ステージ突破数</div></div>
+      <div class="stat-box"><div class="val" id="stClears">0</div><div class="lab">問のクリア数</div></div>
     </div>
     <div style="overflow-x:auto;">
       <table class="data">
@@ -91,15 +81,31 @@
     </div>
   </section>
 
-  <!-- 問題編集（月1回の準備がここで完結） -->
+  <!-- 📝 問題ビルダー（フォームで問題数を自由に増減） -->
   <section class="card">
-    <h2>📝 解答・ヒント設定（JSON）</h2>
-    <p class="small muted">正解・ヒント・「惜しい！」判定メッセージを設定します。謎の問題文・画像は不要です。形式不正時はエラー表示されます。</p>
-    <textarea id="jsonEditor" class="input json-editor"></textarea>
-    <div class="flex" style="margin-top:8px;">
-      <button id="btnSavePuzzle" class="btn btn-gold">解答・ヒント設定を保存</button>
-      <button id="btnReloadPuzzle" class="btn btn-secondary">元に戻す</button>
+    <h2>📝 問題と正解・ヒントの設定</h2>
+    <p class="small muted">問題文や画像は紙・スライド等で別途用意します。ここでは「問の名前」「正解」「ヒント」だけを設定します（ストーリーは不要です）。ヒントの数は問ごとに好きなだけ追加できます。</p>
+    <div class="flex" style="gap:8px;margin-bottom:10px;">
+      <input type="text" id="cfgTitle" class="input flex-1" placeholder="大会名（例：ポケカ Jリーグ 謎解き大会）">
     </div>
+    <div class="flex" style="gap:8px;margin-bottom:14px;">
+      <input type="text" id="cfgClearMsg" class="input flex-1" placeholder="全問クリア時のメッセージ（例：全問クリア！おめでとう！）">
+    </div>
+    <div id="stageBuilder"></div>
+    <div class="flex" style="margin-top:10px;gap:8px;flex-wrap:wrap;">
+      <button id="btnAddStage" class="btn btn-secondary">＋ 新しい問題を追加</button>
+      <button id="btnSaveStages" class="btn btn-gold">設定を保存</button>
+    </div>
+
+    <!-- 上級者用：JSON直接編集（折りたたみ） -->
+    <details style="margin-top:14px;">
+      <summary class="small muted" style="cursor:pointer;">上級者用：JSONで直接編集／バックアップのインポート</summary>
+      <textarea id="jsonEditor" class="input json-editor" style="margin-top:8px;"></textarea>
+      <div class="flex" style="margin-top:8px;gap:6px;">
+        <button id="btnSavePuzzle" class="btn btn-gold btn-sm">JSONを保存</button>
+        <button id="btnReloadPuzzle" class="btn btn-secondary btn-sm">再読み込み</button>
+      </div>
+    </details>
   </section>
 
   <!-- 危険操作 -->
@@ -108,7 +114,7 @@
     <p class="small muted">大会終了後のリセット、またはテストデータの削除用です。</p>
     <div class="flex" style="flex-wrap:wrap; margin-top:8px;">
       <button class="btn btn-secondary" onclick="doReset('hints')">ヒント公開状態のみリセット</button>
-      <button class="btn btn-secondary" onclick="doReset('ranking')">解答履歴・ランキングをリセット</button>
+      <button class="btn btn-secondary" onclick="doReset('ranking')">解答履歴とランキングをリセット</button>
       <button class="btn btn-wrong" onclick="doReset('all')">全データ初期化</button>
     </div>
   </section>
@@ -118,7 +124,7 @@
 <nav class="nav-bar">
   <a class="nav-btn" href="index.html"><span>❓</span>回答</a>
   <a class="nav-btn" href="ranking.html"><span>🏆</span>ランキング</a>
-  <a class="nav-btn active" href="admin.html" aria-current="page"><span>⚙️</span>管理</a>
+  <a class="nav-btn" href="screen.html"><span>📺</span>実況ボード</a>
 </nav>
 
 <script>
@@ -164,14 +170,15 @@ async function load() {
   el("stClears").textContent = adminData.stats.clears;
   el("playerTable").innerHTML = rk.ranking.map(r => `
     <tr>
-      <td><strong>${esc(r.name)}</strong> ${r.finished ? "👑" : ""}</td>
-      <td>${r.cleared_count} / ${rk.total_stages}</td>
-      <td>${r.cleared_count > 0 ? fmt(r.elapsed) : "-"}</td>
-      <td class="small muted">${new Date(r.created_at*1000).toLocaleTimeString("ja-JP")}</td>
+      <td><strong><LaTex>{esc(r.name)}</strong></LaTex>{r.finished ? "👑" : ""}</td>
+      <td><LaTex>{r.cleared_count} /</LaTex>{rk.total_stages}</td>
+      <td><LaTex>{r.cleared_count > 0 ? fmt(r.elapsed) : "-"}</td>       <td class="small muted"></LaTex>{new Date(r.created_at*1000).toLocaleTimeString("ja-JP")}</td>
     </tr>`).join("") || '<tr><td colspan="4" class="muted">まだ参加者はいません</td></tr>';
 
   // ヒント管理
   renderHintControls();
+  // 問題ビルダー（初回ロード時のみ反映）
+  if (!stageBuilderInitialized) initStageBuilder();
   // JSONエディタ（初回のみ）
   if (!el("jsonEditor")._loaded) {
     el("jsonEditor").value = JSON.stringify(adminData.puzzle, null, 2);
@@ -180,32 +187,170 @@ async function load() {
 }
 
 function renderHintControls() {
-  const unlocked = new Set(adminData.hints.map(h => `${h.stage_id}_${h.hint_index}`));
+  const unlocked = new Set(adminData.hints.map(h => `<LaTex>{h.stage_id}_</LaTex>{h.hint_index}`));
   const box = el("hintControls");
   box.innerHTML = "";
   (adminData.puzzle.stages || []).forEach(st => {
     const d = document.createElement("div");
-    d.style.margin = "12px 0";
-    d.innerHTML = `<strong>${esc(st.name)}</strong> <span class="small muted">${esc(st.subtitle||"")}</span>`;
+    d.style.margin = "14px 0";
+    d.innerHTML = `<strong>${esc(st.name || "第" + st.id + "問")}</strong>`;
     const ul = document.createElement("div");
     (st.hints || []).forEach((h, i) => {
-      const key = `${st.id}_${i}`;
+      const key = `<LaTex>{st.id}_</LaTex>{i}`;
       const on = unlocked.has(key);
       const row = document.createElement("div");
       row.className = "switch-row";
       row.style.background = "#0b0f14"; row.style.padding = "8px 12px";
       row.style.borderRadius = "8px"; row.style.margin = "4px 0";
-      row.innerHTML = `<div class="small flex-1" style="margin-right:10px;">ヒント${i+1}： ${esc(h)}</div>
-        <button class="btn btn-sm ${on?'btn-gold':'btn-secondary'}" onclick="toggleHint(${st.id}, ${i})">${on?'★ 公開中（非公開にする）':'公開する'}</button>`;
+      row.innerHTML = `<div class="small flex-1" style="margin-right:10px;">ヒント<LaTex>{i+1}：</LaTex>{esc(h)}</div>
+        <button class="btn btn-sm <LaTex>{on?'btn-gold':'btn-secondary'}" onclick="toggleHint(</LaTex>{st.id}, <LaTex>{i})"></LaTex>{on?'★ 公開中（非公開にする）':'公開する'}</button>`;
       ul.appendChild(row);
     });
+    // 大会中のクイックヒント追記フォーム
+    const addRow = document.createElement("div");
+    addRow.className = "flex";
+    addRow.style.marginTop = "8px"; addRow.style.gap = "6px"; addRow.style.flexWrap = "wrap";
+    addRow.innerHTML = `
+      <input type="text" class="input flex-1" placeholder="この問に新しいヒントを追記..." id="qh_<LaTex>{st.id}">       <button class="btn btn-sm btn-gold" onclick="quickAddHint(</LaTex>{st.id}, true)">追加して即公開</button>
+      <button class="btn btn-sm btn-secondary" onclick="quickAddHint(${st.id}, false)">追加のみ（非公開）</button>`;
+    ul.appendChild(addRow);
     d.appendChild(ul);
     box.appendChild(d);
   });
 }
 
+// ─────────────────────────────────────────────────────────────
+// 問題ビルダー（フォームで問題数・ヒント数を自由に設定）
+// ─────────────────────────────────────────────────────────────
+let stageBuilderInitialized = false;
+let builderStages = [];
+
+function initStageBuilder() {
+  const pz = adminData.puzzle || {};
+  el("cfgTitle").value = pz.title || "";
+  el("cfgClearMsg").value = pz.clearMessage || "全問クリア！おめでとう！";
+  builderStages = JSON.parse(JSON.stringify(pz.stages || []));
+  renderStageBuilder();
+  stageBuilderInitialized = true;
+}
+
+function renderStageBuilder() {
+  const box = el("stageBuilder");
+  box.innerHTML = "";
+  builderStages.forEach((st, idx) => {
+    const card = document.createElement("div");
+    card.className = "stage-card";
+    card.style.background = "#0b0f14"; card.style.border = "1px solid #1f2733";
+    card.style.borderRadius = "10px"; card.style.padding = "12px 14px"; card.style.margin = "10px 0";
+    card.innerHTML = `
+      <div class="flex" style="gap:8px;margin-bottom:8px;">
+        <input type="text" class="input flex-1 st-name" data-idx="<LaTex>{idx}" value="</LaTex>{esc(st.name || '第' + (idx+1) + '問')}" placeholder="問題名（例：第1問）">
+        <button class="btn btn-sm btn-secondary" onclick="deleteStage(<LaTex>{idx})"</LaTex>{builderStages.length<=1?'disabled':''}>この問を削除</button>
+      </div>
+      <div class="small muted" style="margin-bottom:2px;">正解（1行に1つの正解、複数行入力可）</div>
+      <textarea class="input st-answers" data-idx="${idx}" rows="2" placeholder="例：\nピカチュウ\nぴかちゅう\npikachu">${esc((st.answers||[]).join("\n"))}</textarea>
+      <div class="small muted" style="margin:8px 0 2px;">ヒント（この問に好きな数だけ追加できます）</div>
+      <div class="hints-box" data-idx="<LaTex>{idx}"></div>       <button class="btn btn-sm btn-secondary" style="margin-top:6px;" onclick="addHintToStage(</LaTex>{idx})">＋ ヒントを追加</button>`;
+    const hb = card.querySelector('.hints-box');
+    (st.hints || []).forEach((h, hi) => {
+      const hr = document.createElement("div");
+      hr.className = "flex"; hr.style.gap = "6px"; hr.style.margin = "4px 0";
+      hr.innerHTML = `<input type="text" class="input flex-1 st-hint" data-idx="<LaTex>{idx}" data-hidx="</LaTex>{hi}" value="<LaTex>{esc(h)}" placeholder="ヒント</LaTex>{hi+1}">
+        <button class="btn btn-sm btn-secondary" onclick="deleteHintFromStage(<LaTex>{idx},</LaTex>{hi})">削除</button>`;
+      hb.appendChild(hr);
+    });
+    box.appendChild(card);
+  });
+  // 入力同期
+  box.querySelectorAll('.st-name').forEach(inp => inp.oninput = e => builderStages[+e.target.dataset.idx].name = e.target.value);
+  box.querySelectorAll('.st-answers').forEach(ta => ta.oninput = e => builderStages[+e.target.dataset.idx].answers = e.target.value.split("\n").map(s=>s.trim()).filter(Boolean));
+  box.querySelectorAll('.st-hint').forEach(inp => inp.oninput = e => builderStages[+e.target.dataset.idx].hints[+e.target.dataset.hidx] = e.target.value);
+}
+
+function addHintToStage(idx) {
+  builderStages[idx].hints = builderStages[idx].hints || [];
+  builderStages[idx].hints.push("");
+  renderStageBuilder();
+}
+function deleteHintFromStage(idx, hi) {
+  builderStages[idx].hints.splice(hi, 1);
+  renderStageBuilder();
+}
+function deleteStage(idx) {
+  if (builderStages.length <= 1) return;
+  if (!confirm(`本当に「${builderStages[idx].name || 'この問'}」を削除しますか？`)) return;
+  builderStages.splice(idx, 1);
+  renderStageBuilder();
+}
+
+el("btnAddStage").onclick = () => {
+  const n = builderStages.length + 1;
+  builderStages.push({ id: n, name: `第${n}問`, answers: [], hints: [] });
+  renderStageBuilder();
+};
+
+el("btnSaveStages").onclick = async () => {
+  const title = el("cfgTitle").value.trim() || "謎解き大会";
+  const clearMessage = el("cfgClearMsg").value.trim() || "全問クリア！おめでとう！";
+  const stages = builderStages.map((st, i) => ({
+    id: i + 1,
+    name: (st.name || "").trim() || `第${i+1}問`,
+    answers: (st.answers || []).map(s => s.trim()).filter(Boolean),
+    hints: (st.hints || []).map(s => s.trim()).filter(Boolean),
+  }));
+  if (stages.length === 0) { toast("問題が1問もありません"); return; }
+  for (const st of stages) {
+    if (st.answers.length === 0) {
+      if (!confirm(`「${st.name}」に正解が設定されていません。このまま保存しますか？`)) return;
+    }
+  }
+  const puzzle = { title, stages, clearMessage };
+  try {
+    const r = await adminFetch("/api/admin/puzzle/save", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ puzzle })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      stageBuilderInitialized = false;
+      el("jsonEditor")._loaded = false;
+      toast("問題設定を保存しました（" + stages.length + "問）");
+    } else toast(d.error || "保存に失敗しました");
+    await load();
+  } catch(e) { toast("通信エラー"); }
+};
+
+// 大会中のクイックヒント追記（即公開対応）
+async function quickAddHint(stage_id, autoPublish) {
+  const inp = el("qh_" + stage_id);
+  const text = (inp && inp.value || "").trim();
+  if (!text) { toast("ヒント内容を入力してください"); return; }
+  const pz = adminData.puzzle;
+  const st = (pz.stages || []).find(s => s.id === stage_id);
+  if (!st) return;
+  st.hints = st.hints || [];
+  const newIndex = st.hints.length;
+  st.hints.push(text);
+  const r = await adminFetch("/api/admin/puzzle/save", {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ puzzle: pz })
+  });
+  const d = await r.json();
+  if (!d.ok) { toast(d.error || "保存失敗"); return; }
+  if (autoPublish) {
+    await adminFetch("/api/admin/hint/toggle", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ stage_id, hint_index: newIndex })
+    });
+  }
+  inp.value = "";
+  stageBuilderInitialized = false; el("jsonEditor")._loaded = false;
+  await load();
+  toast(st.name + " にヒントを追加しました" + (autoPublish ? "（即公開）" : ""));
+}
+
 el("btnToggleComp").onclick = async () => {
-  const r = await adminFetch("/api/admin/competition/toggle", { method: "POST" });
+  await adminFetch("/api/admin/competition/toggle", { method: "POST" });
   await load(); toast("受付状態を切り替えました");
 };
 el("btnBc").onclick = async () => {
@@ -223,12 +368,15 @@ el("btnSavePuzzle").onclick = async () => {
     const pz = JSON.parse(el("jsonEditor").value);
     const r = await adminFetch("/api/admin/puzzle/save", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({puzzle:pz}) });
     const d = await r.json();
-    if (d.ok) toast("問題データを保存しました"); else toast(d.error);
+    if (d.ok) { stageBuilderInitialized = false; toast("問題データを保存しました"); } else toast(d.error);
     await load();
   } catch(e) { toast("JSONの形式が不正です: " + e.message); }
 };
-el("btnReloadPuzzle").onclick = () => { el("jsonEditor").value = JSON.stringify(adminData.puzzle, null, 2); };
-
+el("btnReloadPuzzle").onclick = () => {
+  stageBuilderInitialized = false;
+  el("jsonEditor")._loaded = false;
+  load();
+};
 async function doReset(what) {
   const names = {all:"すべての解答・ランキング・ヒント・プレイヤーデータ", hints:"ヒント公開状態", ranking:"解答履歴とランキング"};
   if (!confirm(`本当に「${names[what]}」をリセットしますか？この操作は取り消せません。`)) return;
@@ -259,7 +407,6 @@ el("btnLogout").onclick = async () => {
   try { await fetch("/api/admin/logout", { method:"POST", headers:{"X-Admin-Token":token()} }); } catch(e) {}
   setToken(""); showLogin();
 };
-
 el("btnBackup").onclick = async () => {
   try {
     const r = await adminFetch("/api/admin/backup");
@@ -271,7 +418,6 @@ el("btnBackup").onclick = async () => {
     toast("バックアップを保存しました");
   } catch (e) { toast("バックアップの取得に失敗しました"); }
 };
-
 el("btnChangePw").onclick = async () => {
   const r = await adminFetch("/api/admin/password/source");
   const d = await r.json();
