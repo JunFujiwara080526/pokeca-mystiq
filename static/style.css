@@ -150,3 +150,33 @@ textarea.input { font-family: monospace; font-size: 0.85rem; }
 /* Modal */
 .modal-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 100; padding: 16px; }
 .modal-card { width: min(440px, 100%); }
+
+{
+  "title": "ポケカ Jリーグ 謎解き大会",
+  "stages": [
+    {
+      "id": 1,
+      "name": "第1問",
+      "answers": ["ピカチュウ", "ぴかちゅう", "pikachu"],
+      "hints": [
+        "でんきタイプのポケモンです",
+        "黄色い身体でほっぺたが赤いです"
+      ]
+    },
+    {
+      "id": 2,
+      "name": "第2問",
+      "answers": ["リザードン", "りざーどん", "charizard"],
+      "hints": []
+    },
+    {
+      "id": 3,
+      "name": "第3問",
+      "answers": ["ミュウツー", "みゅうつー", "mewtwo"],
+      "hints": [
+        "遺伝子操作で生まれた伝説のポケモンです"
+      ]
+    }
+  ],
+  "clearMessage": "全問クリア！おめでとう！"
+}
