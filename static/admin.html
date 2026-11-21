@@ -177,8 +177,8 @@ async function load() {
 
   // ヒント管理
   renderHintControls();
-  // 問題ビルダー（初回ロード時のみ反映）
-  if (!stageBuilderInitialized) initStageBuilder();
+  // 問題ビルダー（初回のみ描画）
+  if (!builderReady) initStageBuilder();
   // JSONエディタ（初回のみ）
   if (!el("jsonEditor")._loaded) {
     el("jsonEditor").value = JSON.stringify(adminData.puzzle, null, 2);
@@ -186,6 +186,9 @@ async function load() {
   }
 }
 
+// ─────────────────────────────────────────────────────────────
+// ヒント管理（公開／非公開 ＋ 大会中クイック追記） — イベント委譲
+// ─────────────────────────────────────────────────────────────
 function renderHintControls() {
   const unlocked = new Set(adminData.hints.map(h => `<LaTex>{h.stage_id}_</LaTex>{h.hint_index}`));
   const box = el("hintControls");
@@ -203,126 +206,39 @@ function renderHintControls() {
       row.style.background = "#0b0f14"; row.style.padding = "8px 12px";
       row.style.borderRadius = "8px"; row.style.margin = "4px 0";
       row.innerHTML = `<div class="small flex-1" style="margin-right:10px;">ヒント<LaTex>{i+1}：</LaTex>{esc(h)}</div>
-        <button class="btn btn-sm <LaTex>{on?'btn-gold':'btn-secondary'}" onclick="toggleHint(</LaTex>{st.id}, <LaTex>{i})"></LaTex>{on?'★ 公開中（非公開にする）':'公開する'}</button>`;
+        <button class="btn btn-sm <LaTex>{on?'btn-gold':'btn-secondary'} btn-hint-toggle" data-sid="</LaTex>{st.id}" data-hidx="<LaTex>{i}"></LaTex>{on?'★ 公開中（非公開にする）':'公開する'}</button>`;
       ul.appendChild(row);
     });
-    // 大会中のクイックヒント追記フォーム
     const addRow = document.createElement("div");
     addRow.className = "flex";
     addRow.style.marginTop = "8px"; addRow.style.gap = "6px"; addRow.style.flexWrap = "wrap";
     addRow.innerHTML = `
-      <input type="text" class="input flex-1" placeholder="この問に新しいヒントを追記..." id="qh_<LaTex>{st.id}">       <button class="btn btn-sm btn-gold" onclick="quickAddHint(</LaTex>{st.id}, true)">追加して即公開</button>
-      <button class="btn btn-sm btn-secondary" onclick="quickAddHint(${st.id}, false)">追加のみ（非公開）</button>`;
+      <input type="text" class="input flex-1 qh-input" data-sid="${st.id}" placeholder="この問に新しいヒントを追記...">
+      <button class="btn btn-sm btn-gold btn-qh" data-sid="${st.id}" data-pub="1">追加して即公開</button>
+      <button class="btn btn-sm btn-secondary btn-qh" data-sid="${st.id}" data-pub="0">追加のみ（非公開）</button>`;
     ul.appendChild(addRow);
     d.appendChild(ul);
     box.appendChild(d);
   });
 }
 
-// ─────────────────────────────────────────────────────────────
-// 問題ビルダー（フォームで問題数・ヒント数を自由に設定）
-// ─────────────────────────────────────────────────────────────
-let stageBuilderInitialized = false;
-let builderStages = [];
-
-function initStageBuilder() {
-  const pz = adminData.puzzle || {};
-  el("cfgTitle").value = pz.title || "";
-  el("cfgClearMsg").value = pz.clearMessage || "全問クリア！おめでとう！";
-  builderStages = JSON.parse(JSON.stringify(pz.stages || []));
-  renderStageBuilder();
-  stageBuilderInitialized = true;
-}
-
-function renderStageBuilder() {
-  const box = el("stageBuilder");
-  box.innerHTML = "";
-  builderStages.forEach((st, idx) => {
-    const card = document.createElement("div");
-    card.className = "stage-card";
-    card.style.background = "#0b0f14"; card.style.border = "1px solid #1f2733";
-    card.style.borderRadius = "10px"; card.style.padding = "12px 14px"; card.style.margin = "10px 0";
-    card.innerHTML = `
-      <div class="flex" style="gap:8px;margin-bottom:8px;">
-        <input type="text" class="input flex-1 st-name" data-idx="<LaTex>{idx}" value="</LaTex>{esc(st.name || '第' + (idx+1) + '問')}" placeholder="問題名（例：第1問）">
-        <button class="btn btn-sm btn-secondary" onclick="deleteStage(<LaTex>{idx})"</LaTex>{builderStages.length<=1?'disabled':''}>この問を削除</button>
-      </div>
-      <div class="small muted" style="margin-bottom:2px;">正解（1行に1つの正解、複数行入力可）</div>
-      <textarea class="input st-answers" data-idx="${idx}" rows="2" placeholder="例：\nピカチュウ\nぴかちゅう\npikachu">${esc((st.answers||[]).join("\n"))}</textarea>
-      <div class="small muted" style="margin:8px 0 2px;">ヒント（この問に好きな数だけ追加できます）</div>
-      <div class="hints-box" data-idx="<LaTex>{idx}"></div>       <button class="btn btn-sm btn-secondary" style="margin-top:6px;" onclick="addHintToStage(</LaTex>{idx})">＋ ヒントを追加</button>`;
-    const hb = card.querySelector('.hints-box');
-    (st.hints || []).forEach((h, hi) => {
-      const hr = document.createElement("div");
-      hr.className = "flex"; hr.style.gap = "6px"; hr.style.margin = "4px 0";
-      hr.innerHTML = `<input type="text" class="input flex-1 st-hint" data-idx="<LaTex>{idx}" data-hidx="</LaTex>{hi}" value="<LaTex>{esc(h)}" placeholder="ヒント</LaTex>{hi+1}">
-        <button class="btn btn-sm btn-secondary" onclick="deleteHintFromStage(<LaTex>{idx},</LaTex>{hi})">削除</button>`;
-      hb.appendChild(hr);
-    });
-    box.appendChild(card);
-  });
-  // 入力同期
-  box.querySelectorAll('.st-name').forEach(inp => inp.oninput = e => builderStages[+e.target.dataset.idx].name = e.target.value);
-  box.querySelectorAll('.st-answers').forEach(ta => ta.oninput = e => builderStages[+e.target.dataset.idx].answers = e.target.value.split("\n").map(s=>s.trim()).filter(Boolean));
-  box.querySelectorAll('.st-hint').forEach(inp => inp.oninput = e => builderStages[+e.target.dataset.idx].hints[+e.target.dataset.hidx] = e.target.value);
-}
-
-function addHintToStage(idx) {
-  builderStages[idx].hints = builderStages[idx].hints || [];
-  builderStages[idx].hints.push("");
-  renderStageBuilder();
-}
-function deleteHintFromStage(idx, hi) {
-  builderStages[idx].hints.splice(hi, 1);
-  renderStageBuilder();
-}
-function deleteStage(idx) {
-  if (builderStages.length <= 1) return;
-  if (!confirm(`本当に「${builderStages[idx].name || 'この問'}」を削除しますか？`)) return;
-  builderStages.splice(idx, 1);
-  renderStageBuilder();
-}
-
-el("btnAddStage").onclick = () => {
-  const n = builderStages.length + 1;
-  builderStages.push({ id: n, name: `第${n}問`, answers: [], hints: [] });
-  renderStageBuilder();
-};
-
-el("btnSaveStages").onclick = async () => {
-  const title = el("cfgTitle").value.trim() || "謎解き大会";
-  const clearMessage = el("cfgClearMsg").value.trim() || "全問クリア！おめでとう！";
-  const stages = builderStages.map((st, i) => ({
-    id: i + 1,
-    name: (st.name || "").trim() || `第${i+1}問`,
-    answers: (st.answers || []).map(s => s.trim()).filter(Boolean),
-    hints: (st.hints || []).map(s => s.trim()).filter(Boolean),
-  }));
-  if (stages.length === 0) { toast("問題が1問もありません"); return; }
-  for (const st of stages) {
-    if (st.answers.length === 0) {
-      if (!confirm(`「${st.name}」に正解が設定されていません。このまま保存しますか？`)) return;
-    }
+// イベント委譲：ヒント公開切替・クイックヒント追記
+el("hintControls").addEventListener("click", async e => {
+  const toggle = e.target.closest(".btn-hint-toggle");
+  if (toggle) {
+    e.preventDefault();
+    await toggleHint(+toggle.dataset.sid, +toggle.dataset.hidx);
+    return;
   }
-  const puzzle = { title, stages, clearMessage };
-  try {
-    const r = await adminFetch("/api/admin/puzzle/save", {
-      method: "POST", headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({ puzzle })
-    });
-    const d = await r.json();
-    if (d.ok) {
-      stageBuilderInitialized = false;
-      el("jsonEditor")._loaded = false;
-      toast("問題設定を保存しました（" + stages.length + "問）");
-    } else toast(d.error || "保存に失敗しました");
-    await load();
-  } catch(e) { toast("通信エラー"); }
-};
+  const qh = e.target.closest(".btn-qh");
+  if (qh) {
+    e.preventDefault();
+    await quickAddHint(+qh.dataset.sid, qh.dataset.pub === "1");
+  }
+});
 
-// 大会中のクイックヒント追記（即公開対応）
 async function quickAddHint(stage_id, autoPublish) {
-  const inp = el("qh_" + stage_id);
+  const inp = boxFind(`.qh-input[data-sid="${stage_id}"]`, el("hintControls"));
   const text = (inp && inp.value || "").trim();
   if (!text) { toast("ヒント内容を入力してください"); return; }
   const pz = adminData.puzzle;
@@ -344,11 +260,170 @@ async function quickAddHint(stage_id, autoPublish) {
     });
   }
   inp.value = "";
-  stageBuilderInitialized = false; el("jsonEditor")._loaded = false;
+  builderReady = false; el("jsonEditor")._loaded = false;
   await load();
   toast(st.name + " にヒントを追加しました" + (autoPublish ? "（即公開）" : ""));
 }
 
+// ─────────────────────────────────────────────────────────────
+// 問題ビルダー（フォームで問題数・ヒント数を自由に設定）
+// ─────────────────────────────────────────────────────────────
+let builderReady = false;
+
+function initStageBuilder() {
+  const pz = adminData.puzzle || {};
+  el("cfgTitle").value = pz.title || "";
+  el("cfgClearMsg").value = pz.clearMessage || "全問クリア！おめでとう！";
+  const box = el("stageBuilder");
+  box.innerHTML = "";
+  const stages = (pz.stages && pz.stages.length) ? pz.stages : [{ id: 1, name: "第1問", answers: [], hints: [] }];
+  stages.forEach(st => box.appendChild(createStageCard(st)));
+  renumberStages();
+  builderReady = true;
+}
+
+function createStageCard(st) {
+  const card = document.createElement("div");
+  card.className = "stage-card";
+  card.style.background = "#0b0f14"; card.style.border = "1px solid #1f2733";
+  card.style.borderRadius = "10px"; card.style.padding = "12px 14px"; card.style.margin = "10px 0";
+  card.innerHTML = `
+    <div class="flex" style="gap:8px;margin-bottom:8px;">
+      <input type="text" class="input flex-1 st-name" value="${esc(st.name || '')}" placeholder="問題名（例：第1問）">
+      <button type="button" class="btn btn-sm btn-secondary btn-del-stage">この問を削除</button>
+    </div>
+    <div class="small muted" style="margin-bottom:2px;">正解（1行に1つの正解、複数行入力可）</div>
+    <textarea class="input st-answers" rows="2" placeholder="例：&#10;ピカチュウ&#10;ぴかちゅう&#10;pikachu">${esc((st.answers||[]).join("\n"))}</textarea>
+    <div class="small muted" style="margin:8px 0 2px;">ヒント（この問に好きな数だけ追加できます）</div>
+    <div class="hints-box"></div>
+    <button type="button" class="btn btn-sm btn-secondary btn-add-hint" style="margin-top:6px;">＋ ヒントを追加</button>`;
+  const hb = card.querySelector('.hints-box');
+  (st.hints || []).forEach(h => hb.appendChild(createHintRow(h)));
+  return card;
+}
+
+function createHintRow(val) {
+  const hr = document.createElement("div");
+  hr.className = "flex hint-row"; hr.style.gap = "6px"; hr.style.margin = "4px 0";
+  hr.innerHTML = `<input type="text" class="input flex-1 st-hint" value="${esc(val||'')}">
+    <button type="button" class="btn btn-sm btn-secondary btn-del-hint">削除</button>`;
+  return hr;
+}
+
+function renumberStages() {
+  const cards = el("stageBuilder").querySelectorAll(".stage-card");
+  cards.forEach((card, idx) => {
+    const inp = card.querySelector(".st-name");
+    inp.placeholder = `第${idx+1}問`;
+    const btn = card.querySelector(".btn-del-stage");
+    btn.disabled = (cards.length <= 1);
+    btn.style.opacity = (cards.length <= 1) ? 0.4 : 1;
+  });
+}
+
+function renumberHints(card) {
+  card.querySelectorAll(".hint-row").forEach((hr, i) => {
+    hr.querySelector(".st-hint").placeholder = `ヒント ${i+1}`;
+  });
+}
+
+// イベント委譲：ヒント追加・ヒント削除・問題削除（2段階確認、全再描画なし）
+el("stageBuilder").addEventListener("click", e => {
+  // ヒントを追加（そのカード内に1行追加するだけ）
+  const addH = e.target.closest(".btn-add-hint");
+  if (addH) {
+    e.preventDefault();
+    const card = addH.closest(".stage-card");
+    const hb = card.querySelector(".hints-box");
+    const row = createHintRow("");
+    hb.appendChild(row);
+    renumberHints(card);
+    row.querySelector(".st-hint").focus();
+    return;
+  }
+  // ヒントを削除
+  const delH = e.target.closest(".btn-del-hint");
+  if (delH) {
+    e.preventDefault();
+    const card = delH.closest(".stage-card");
+    delH.closest(".hint-row").remove();
+    renumberHints(card);
+    return;
+  }
+  // 問題を削除（2段階確認：1回目で警告、2回目で実削除）
+  const delS = e.target.closest(".btn-del-stage");
+  if (delS) {
+    e.preventDefault();
+    const cards = el("stageBuilder").querySelectorAll(".stage-card");
+    if (cards.length <= 1) { toast("問題は1問以上必要です"); return; }
+    if (!delS._arm) {
+      delS._arm = true;
+      delS.dataset.orig = delS.textContent;
+      delS.textContent = "本当に削除？";
+      delS.classList.remove("btn-secondary"); delS.classList.add("btn-wrong");
+      setTimeout(() => {
+        delS._arm = false;
+        delS.textContent = delS.dataset.orig || "この問を削除";
+        delS.classList.remove("btn-wrong"); delS.classList.add("btn-secondary");
+      }, 5000);
+      return;
+    }
+    delS.closest(".stage-card").remove();
+    renumberStages();
+    toast("問題を削除しました");
+  }
+});
+
+// 新しい問題を追加（カードを1個追加するだけ）
+el("btnAddStage").onclick = () => {
+  const box = el("stageBuilder");
+  const n = box.querySelectorAll(".stage-card").length + 1;
+  const card = createStageCard({ id: n, name: `第${n}問`, answers: [], hints: [] });
+  box.appendChild(card);
+  renumberStages();
+  card.querySelector(".st-answers").focus();
+  card.scrollIntoView({ behavior: "smooth", block: "center" });
+};
+
+// DOMから値を収集して保存
+el("btnSaveStages").onclick = async () => {
+  const title = el("cfgTitle").value.trim() || "謎解き大会";
+  const clearMessage = el("cfgClearMsg").value.trim() || "全問クリア！おめでとう！";
+  const cards = el("stageBuilder").querySelectorAll(".stage-card");
+  if (cards.length === 0) { toast("問題が1問もありません"); return; }
+  const stages = [];
+  cards.forEach((card, idx) => {
+    const name = card.querySelector(".st-name").value.trim() || `第${idx+1}問`;
+    const answers = card.querySelector(".st-answers").value.split("\n").map(s => s.trim()).filter(Boolean);
+    const hints = [];
+    card.querySelectorAll(".st-hint").forEach(inp => {
+      const v = inp.value.trim();
+      if (v) hints.push(v);
+    });
+    stages.push({ id: idx + 1, name, answers, hints });
+  });
+  for (const st of stages) {
+    if (st.answers.length === 0) {
+      toast(`「${st.name}」に正解が設定されていません。入力してから保存してください`);
+      return;
+    }
+  }
+  try {
+    const r = await adminFetch("/api/admin/puzzle/save", {
+      method: "POST", headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({ puzzle: { title, stages, clearMessage } })
+    });
+    const d = await r.json();
+    if (d.ok) {
+      builderReady = false;
+      el("jsonEditor")._loaded = false;
+      toast(`問題設定を保存しました（${stages.length}問）`);
+      await load();
+    } else toast(d.error || "保存に失敗しました");
+  } catch(e) { toast("通信エラー"); }
+};
+
+// 進行・アナウンス・ヒント公開
 el("btnToggleComp").onclick = async () => {
   await adminFetch("/api/admin/competition/toggle", { method: "POST" });
   await load(); toast("受付状態を切り替えました");
@@ -368,12 +443,12 @@ el("btnSavePuzzle").onclick = async () => {
     const pz = JSON.parse(el("jsonEditor").value);
     const r = await adminFetch("/api/admin/puzzle/save", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({puzzle:pz}) });
     const d = await r.json();
-    if (d.ok) { stageBuilderInitialized = false; toast("問題データを保存しました"); } else toast(d.error);
+    if (d.ok) { builderReady = false; toast("問題データを保存しました"); } else toast(d.error);
     await load();
   } catch(e) { toast("JSONの形式が不正です: " + e.message); }
 };
 el("btnReloadPuzzle").onclick = () => {
-  stageBuilderInitialized = false;
+  builderReady = false;
   el("jsonEditor")._loaded = false;
   load();
 };
@@ -383,9 +458,11 @@ async function doReset(what) {
   const r = await adminFetch("/api/admin/reset", { method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify({what}) });
   const d = await r.json(); toast(d.message); await load();
 }
+
 function toast(m){ const t=el("toast"); t.textContent=m; t.style.display="block"; clearTimeout(t._tm); t._tm=setTimeout(()=>t.style.display="none",2500); }
 function fmt(s){ const m=Math.floor(s/60); return `${m}分${String(s%60).padStart(2,"0")}秒`; }
 function esc(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"}[c])); }
+function boxFind(sel, root){ return root.querySelector(sel); }
 
 async function login() {
   el("loginError").textContent = "";
