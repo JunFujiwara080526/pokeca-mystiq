@@ -3,7 +3,7 @@
 Mystiq - 謎解き大会 回答・進行システム
 外部依存なし（Python 3.9+ 標準ライブラリのみ）
 """
-import cgi
+
 import base64
 import hashlib
 import hmac
